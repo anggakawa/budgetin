@@ -26,6 +26,7 @@ header h1 {
 nav ul {
     display: flex;
     gap: 1.5rem;
+    flex-wrap: wrap;
 }
 
 nav a {
@@ -50,6 +51,18 @@ nav a.active {
     box-shadow: 3px 3px 0px var(--border-color);
 }
 
+/* Mobile Menu Button */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    box-shadow: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--dark-color);
+}
+
 /* Pages */
 .page {
     display: none;
@@ -67,6 +80,37 @@ nav a.active {
     
     header {
         flex-direction: column;
+        align-items: flex-start;
+        position: relative;
+    }
+    
+    header h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    nav {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    
+    nav::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Edge */
+    }
+    
+    nav ul {
+        display: flex;
+        gap: 0.75rem;
+        padding-bottom: 0.5rem;
+        min-width: max-content;
+    }
+    
+    nav a {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
     }
     
     .charts-container {
@@ -87,6 +131,29 @@ nav a.active {
     
     .card p {
         font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0.75rem;
+    }
+    
+    header h1 {
+        font-size: 1.75rem;
+    }
+    
+    nav ul {
+        gap: 0.5rem;
+    }
+    
+    nav a {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+    }
+    
+    .summary-cards {
+        grid-template-columns: 1fr;
     }
 }
 
