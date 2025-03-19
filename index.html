@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BudgetIn - Simple Budget Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/forms.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>BudgetIn</h1>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active" data-page="dashboard">Dashboard</a></li>
+                    <li><a href="#" data-page="transactions">Transactions</a></li>
+                    <li><a href="#" data-page="subscriptions">Subscriptions</a></li>
+                    <li><a href="#" data-page="trends">Trends</a></li>
+                    <li><a href="#" data-page="calendar">Calendar</a></li>
+                    <li><a href="#" data-page="settings">Settings</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <!-- Dashboard Page -->
+            <section id="dashboard" class="page active">
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Total Balance</h3>
+                        <p class="balance"><span class="currency-symbol">$</span><span id="total-balance">0.00</span></p>
+                    </div>
+                    <div class="card">
+                        <h3>Income</h3>
+                        <p class="income"><span class="currency-symbol">$</span><span id="total-income">0.00</span></p>
+                    </div>
+                    <div class="card">
+                        <h3>Expenses</h3>
+                        <p class="expense"><span class="currency-symbol">$</span><span id="total-expenses">0.00</span></p>
+                    </div>
+                    <div class="card">
+                        <h3>Subscriptions</h3>
+                        <p class="subscription"><span class="currency-symbol">$</span><span id="total-subscriptions">0.00</span>/mo</p>
+                    </div>
+                </div>
+                
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Income vs Expenses</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="income-expense-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Expense Categories</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="expense-category-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="time-filters">
+                    <button class="time-filter active" data-period="week">Week</button>
+                    <button class="time-filter" data-period="month">Month</button>
+                    <button class="time-filter" data-period="quarter">Quarter</button>
+                    <button class="time-filter" data-period="year">Year</button>
+                </div>
+                
+                <div class="recent-transactions">
+                    <h3>Recent Transactions</h3>
+                    <div class="transaction-list" id="recent-transactions-list">
+                        <!-- Transactions will be added here dynamically -->
+                    </div>
+                    <a href="#" class="view-all" data-page="transactions">View All</a>
+                </div>
+            </section>
+            
+            <!-- Transactions Page -->
+            <section id="transactions" class="page">
+                <h2>Transactions</h2>
+                <div class="add-transaction">
+                    <button id="add-transaction-btn">Add Transaction</button>
+                </div>
+                <div class="transaction-filters">
+                    <select id="transaction-type-filter" aria-label="Filter by transaction type">
+                        <option value="all">All Types</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                    <select id="transaction-category-filter" aria-label="Filter by category">
+                        <option value="all">All Categories</option>
+                        <!-- Categories will be added dynamically -->
+                    </select>
+                    <div class="date-range">
+                        <input type="date" id="date-from" aria-label="From date">
+                        <span>to</span>
+                        <input type="date" id="date-to" aria-label="To date">
+                    </div>
+                </div>
+                <div class="transactions-list" id="all-transactions-list">
+                    <!-- Transactions will be added here dynamically -->
+                </div>
+            </section>
+            
+            <!-- Subscriptions Page -->
+            <section id="subscriptions" class="page">
+                <h2>Subscriptions</h2>
+                <div class="add-subscription">
+                    <button id="add-subscription-btn">Add Subscription</button>
+                </div>
+                <div class="subscriptions-list" id="subscriptions-list">
+                    <!-- Subscriptions will be added here dynamically -->
+                </div>
+            </section>
+            
+            <!-- Trend Analysis Page -->
+            <section id="trends" class="page">
+                <h2>Trend Analysis</h2>
+                
+                <div id="trend-insights" class="trend-insights">
+                    <!-- Insights will be added here dynamically -->
+                </div>
+                
+                <div class="chart-card">
+                    <h3>Income & Expense Trends</h3>
+                    <div class="chart-wrapper" style="height: 300px;">
+                        <canvas id="trend-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <h3>Category Spending Trends</h3>
+                    <div class="chart-wrapper" style="height: 300px;">
+                        <canvas id="category-trend-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Calendar Page -->
+            <section id="calendar" class="page">
+                <!-- Calendar content will be dynamically generated -->
+            </section>
+            
+            <!-- Settings Page -->
+            <section id="settings" class="page">
+                <h2>Settings</h2>
+                <div class="settings-content">
+                    <div class="setting-group">
+                        <h3>Currency & Display</h3>
+                        <div class="setting-option">
+                            <label for="currency-select">Currency</label>
+                            <select id="currency-select">
+                                <!-- Southeast Asian Currencies -->
+                                <option value="Rp" selected>Rp - Indonesian Rupiah</option>
+                                <option value="₱">₱ - Philippine Peso</option>
+                                <option value="RM">RM - Malaysian Ringgit</option>
+                                <option value="฿">฿ - Thai Baht</option>
+                                <option value="₫">₫ - Vietnamese Dong</option>
+                                <option value="S$">S$ - Singapore Dollar</option>
+                                <!-- Major Global Currencies -->
+                                <option value="$">$ - US Dollar</option>
+                                <option value="€">€ - Euro</option>
+                                <option value="£">£ - British Pound</option>
+                                <option value="¥">¥ - Japanese Yen</option>
+                                <option value="元">元 - Chinese Yuan</option>
+                                <option value="₹">₹ - Indian Rupee</option>
+                                <option value="₩">₩ - Korean Won</option>
+                                <!-- Other Currencies -->
+                                <option value="A$">A$ - Australian Dollar</option>
+                                <option value="C$">C$ - Canadian Dollar</option>
+                                <option value="CHF">CHF - Swiss Franc</option>
+                                <option value="custom">+ Add Custom Currency</option>
+                            </select>
+                            <div id="custom-currency-container">
+                                <div class="currency-inputs">
+                                    <input type="text" id="custom-currency-symbol" placeholder="Currency Symbol" maxlength="3" class="currency-symbol-input">
+                                    <input type="text" id="custom-currency-name" placeholder="Currency Name" class="currency-name-input">
+                                </div>
+                                <button id="save-custom-currency">Save Currency</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <h3>Categories</h3>
+                        <div id="categories-list">
+                            <!-- Categories will be added here dynamically -->
+                        </div>
+                        <div class="add-category">
+                            <input type="text" id="new-category-name" placeholder="New category name">
+                            <div class="category-type-selector">
+                                <label class="radio-label">
+                                    <input type="radio" name="category-type" value="expense" checked> Expense
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="category-type" value="income"> Income
+                                </label>
+                            </div>
+                            <button id="add-category-btn">Add</button>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <h3>Data Management</h3>
+                        <button id="export-data">Export Data</button>
+                        <button id="import-data">Import Data</button>
+                        <button id="clear-data" class="danger">Clear All Data</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Modal for adding transactions -->
+    <div id="transaction-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Transaction</h2>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label for="transaction-type">Type</label>
+                    <select id="transaction-type" required>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-amount">Amount</label>
+                    <input type="number" id="transaction-amount" min="0.01" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="transaction-category">Category</label>
+                    <select id="transaction-category" required>
+                        <!-- Categories will be added dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-date">Date</label>
+                    <input type="date" id="transaction-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-description">Description</label>
+                    <input type="text" id="transaction-description" placeholder="Description">
+                </div>
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal for adding subscriptions -->
+    <div id="subscription-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Subscription</h2>
+            <form id="subscription-form">
+                <div class="form-group">
+                    <label for="subscription-name">Name</label>
+                    <input type="text" id="subscription-name" required placeholder="Netflix, Spotify, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="subscription-amount">Amount</label>
+                    <input type="number" id="subscription-amount" min="0.01" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="subscription-category">Category</label>
+                    <select id="subscription-category" required>
+                        <!-- Categories will be added dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subscription-billing-cycle">Billing Cycle</label>
+                    <select id="subscription-billing-cycle" required>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly" selected>Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annually">Annually</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subscription-next-billing">Next Billing Date</label>
+                    <input type="date" id="subscription-next-billing" required>
+                </div>
+                <div class="form-group">
+                    <label for="subscription-description">Description</label>
+                    <input type="text" id="subscription-description" placeholder="Description">
+                </div>
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Main application script (must be loaded as module) -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html> 
