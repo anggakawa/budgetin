@@ -234,7 +234,9 @@ export default class Subscriptions {
                         <span class="subscription-pocket">${pocket.name}</span>
                     </div>
                 </div>
-                <button class="delete-subscription">&times;</button>
+                <div class="subscription-actions">
+                    <button class="delete-subscription">&times;</button>
+                </div>
             `;
             
             subscriptionElement.innerHTML = subscriptionContent;

@@ -290,7 +290,7 @@ export default class Transactions {
                         ${transaction.description ? `<span class="transaction-description">${transaction.description}</span>` : ''}
                     </div>
                 </div>
-                ${isTransfer ? '' : '<button class="delete-transaction">&times;</button>'}
+                ${isTransfer ? '' : '<div class="transaction-actions"><button class="delete-transaction">&times;</button></div>'}
             `;
             
             transactionElement.innerHTML = transactionContent;

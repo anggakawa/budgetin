@@ -157,6 +157,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     position: relative;
     margin: auto;
+    border: 2px solid var(--border-color);
 }
 
 .close {
@@ -167,10 +168,17 @@
     cursor: pointer;
     color: #999;
     transition: color 0.2s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
 .close:hover {
     color: var(--danger-color);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .form-group {
@@ -218,21 +226,10 @@ form button {
 .subscription-actions {
     display: flex;
     gap: 0.5rem;
+    opacity: 1;
 }
 
-.delete-transaction,
-.delete-subscription {
-    color: var(--danger-color);
-    cursor: pointer;
-    transition: var(--transition);
-    font-size: 1.25rem;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-}
+/* Delete buttons are now styled in components.css */
 
 .no-data {
     text-align: center;
@@ -352,13 +349,54 @@ button.danger:hover,
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
 }
 
 .form-actions button {
     min-width: 120px;
-    flex: 1;
-    max-width: 45%;
+    font-weight: 700;
+}
+
+.btn-primary, .btn-secondary, .danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: white;
+    color: var(--dark-color);
+}
+
+.btn-primary:hover, .btn-secondary:hover, .danger:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px var(--border-color);
+}
+
+.btn-primary:active, .btn-secondary:active, .danger:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px var(--border-color);
+}
+
+.danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.danger:hover {
+    background-color: var(--danger-dark);
 }
 
 /* Filter Controls - Consolidated */
@@ -488,10 +526,45 @@ input[type="color"] {
         margin-bottom: 0.75rem;
     }
     
+    .modal {
+        align-items: flex-end;
+        padding: 0;
+    }
+    
     .modal-content {
+        border-radius: 20px 20px 0 0;
         padding: 1.5rem;
-        width: 95%;
-        border-radius: 8px;
+        max-width: 100%;
+        width: 100%;
+        max-height: 85vh;
+        margin-bottom: 0;
+        animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+    
+    .close {
+        top: 0.75rem;
+        right: 0.75rem;
+        background-color: var(--danger-color);
+        color: white;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 2px 2px 0px var(--border-color);
+        font-size: 1.25rem;
+        z-index: 10;
+    }
+    
+    .close:hover {
+        background-color: var(--danger-dark);
+        color: white;
     }
     
     .modal h2 {
@@ -524,6 +597,22 @@ input[type="color"] {
     
     .setting-group h3 {
         font-size: 0.8rem;
+    }
+    
+    /* Better tap targets on mobile */
+    .btn-secondary, .btn-primary, .danger, button[type="submit"], button[type="button"] {
+        min-height: 44px;
+        padding: 0.8rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .form-actions {
+        margin-top: 1.5rem;
+    }
+    
+    /* Make modal title and close button not overlap */
+    .modal-content h2 {
+        padding-right: 40px;
     }
 }
 
