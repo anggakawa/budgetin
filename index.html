@@ -53,6 +53,14 @@
                     </div>
                 </div>
                 
+                <!-- Pockets Summary Cards -->
+                <div class="pockets-container">
+                    <h3>Your Pockets</h3>
+                    <div class="pockets-cards" id="dashboard-pockets">
+                        <!-- Pockets will be added here dynamically -->
+                    </div>
+                </div>
+                
                 <div class="charts-container">
                     <div class="chart-card">
                         <h3>Income vs Expenses</h3>
@@ -99,6 +107,10 @@
                     <select id="transaction-category-filter" aria-label="Filter by category">
                         <option value="all">All Categories</option>
                         <!-- Categories will be added dynamically -->
+                    </select>
+                    <select id="transaction-pocket-filter" aria-label="Filter by pocket">
+                        <option value="all">All Pockets</option>
+                        <!-- Pockets will be added dynamically -->
                     </select>
                     <div class="date-range">
                         <input type="date" id="date-from" aria-label="From date">
@@ -189,6 +201,21 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="setting-group">
+                        <h3>Pockets</h3>
+                        <div class="setting-description">
+                            Create and manage pockets to track different accounts like cash, bank accounts, credit cards, etc.
+                        </div>
+                        <div id="pockets-list" class="pockets-list">
+                            <!-- Pockets will be added here dynamically -->
+                        </div>
+                        <div class="pockets-actions">
+                            <button id="add-pocket-btn" class="btn-primary">Add Pocket</button>
+                            <button id="transfer-btn" class="btn-secondary">Transfer Between Pockets</button>
+                        </div>
+                    </div>
+                    
                     <div class="setting-group">
                         <h3>Categories</h3>
                         <div id="categories-list">
@@ -242,6 +269,12 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="transaction-pocket">Pocket</label>
+                    <select id="transaction-pocket" required>
+                        <!-- Pockets will be added dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="transaction-date">Date</label>
                     <input type="date" id="transaction-date" required>
                 </div>
@@ -249,7 +282,10 @@
                     <label for="transaction-description">Description</label>
                     <input type="text" id="transaction-description" placeholder="Description">
                 </div>
-                <button type="submit">Save</button>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary modal-cancel">CANCEL</button>
+                    <button type="submit" class="btn-primary">SAVE</button>
+                </div>
             </form>
         </div>
     </div>
@@ -262,7 +298,7 @@
             <form id="subscription-form">
                 <div class="form-group">
                     <label for="subscription-name">Name</label>
-                    <input type="text" id="subscription-name" required placeholder="Netflix, Spotify, etc.">
+                    <input type="text" id="subscription-name" required placeholder="Subscription Name">
                 </div>
                 <div class="form-group">
                     <label for="subscription-amount">Amount</label>
@@ -275,28 +311,102 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="subscription-billing-cycle">Billing Cycle</label>
-                    <select id="subscription-billing-cycle" required>
+                    <label for="subscription-cycle">Billing Cycle</label>
+                    <select id="subscription-cycle" required>
                         <option value="weekly">Weekly</option>
                         <option value="monthly" selected>Monthly</option>
                         <option value="quarterly">Quarterly</option>
-                        <option value="annually">Annually</option>
+                        <option value="yearly">Yearly</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="subscription-next-billing">Next Billing Date</label>
-                    <input type="date" id="subscription-next-billing" required>
+                    <label for="subscription-next-date">Next Billing Date</label>
+                    <input type="date" id="subscription-next-date" required>
                 </div>
                 <div class="form-group">
-                    <label for="subscription-description">Description</label>
-                    <input type="text" id="subscription-description" placeholder="Description">
+                    <label for="subscription-pocket">Pocket</label>
+                    <select id="subscription-pocket" required>
+                        <!-- Pockets will be added dynamically -->
+                    </select>
                 </div>
-                <button type="submit">Save</button>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary modal-cancel">CANCEL</button>
+                    <button type="submit" class="btn-primary">SAVE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for adding or editing pockets -->
+    <div id="pocket-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Pocket</h2>
+            <form id="pocket-form">
+                <div class="form-group">
+                    <label for="pocket-name">Pocket Name</label>
+                    <input type="text" id="pocket-name" required placeholder="e.g. Cash, Bank Account, Credit Card">
+                </div>
+                <div class="form-group">
+                    <label for="pocket-icon">Icon</label>
+                    <select id="pocket-icon" required>
+                        <option value="cash">💵 Cash</option>
+                        <option value="bank">🏦 Bank Account</option>
+                        <option value="wallet" selected>👛 Wallet</option>
+                        <option value="card">💳 Credit Card</option>
+                        <option value="savings">🏺 Savings</option>
+                        <option value="invest">📈 Investments</option>
+                        <option value="crypto">🪙 Crypto</option>
+                        <option value="piggy">🐖 Piggy Bank</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pocket-color">Color</label>
+                    <input type="color" id="pocket-color" value="#3498db">
+                </div>
+                <div class="form-group" id="initial-balance-group">
+                    <label for="pocket-initial-balance">Initial Balance</label>
+                    <input type="number" id="pocket-initial-balance" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary modal-cancel">CANCEL</button>
+                    <button type="button" id="save-pocket-btn" class="btn-primary">SAVE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for transferring between pockets -->
+    <div id="transfer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Transfer Between Pockets</h2>
+            <form id="transfer-form">
+                <div class="form-group">
+                    <label for="from-pocket">From Pocket</label>
+                    <select id="from-pocket" required>
+                        <!-- Pockets will be added dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="to-pocket">To Pocket</label>
+                    <select id="to-pocket" required>
+                        <!-- Pockets will be added dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="transfer-amount">Amount</label>
+                    <input type="number" id="transfer-amount" min="0.01" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary modal-cancel">CANCEL</button>
+                    <button type="button" id="perform-transfer-btn" class="btn-primary">TRANSFER</button>
+                </div>
             </form>
         </div>
     </div>
     
-    <!-- Main application script (must be loaded as module) -->
+    <!-- JavaScript Files -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html> 

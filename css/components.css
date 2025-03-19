@@ -1,37 +1,35 @@
 /* Dashboard Cards */
 .summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
     margin-bottom: 2rem;
 }
 
 .card {
     background-color: white;
-    border: 2px solid var(--border-color);
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-    transition: var(--transition);
+    border-radius: 10px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .card:hover {
-    transform: translate(-3px, -3px);
-    box-shadow: 8px 8px 0px var(--border-color);
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .card h3 {
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 0.5rem;
-    color: var(--text-color);
-    opacity: 0.8;
+    margin-top: 0;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.8rem;
 }
 
 .card p {
-    font-size: 1.75rem;
-    font-weight: 700;
-    letter-spacing: -0.5px;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
 }
 
 .balance {
@@ -50,176 +48,395 @@
     color: var(--tertiary-color);
 }
 
-/* Charts */
-.charts-container {
+/* Pockets Container */
+.pockets-container {
+    margin-bottom: 2rem;
+}
+
+.pockets-container h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.pockets-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.pocket-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border-left: 4px solid;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pocket-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.pocket-card-header {
     display: flex;
+    align-items: center;
+    padding: 0.8rem;
+    color: white;
+}
+
+.pocket-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: 0.8rem;
+    font-size: 18px;
+}
+
+.pocket-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: white;
+}
+
+.pocket-name {
+    font-weight: 500;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pocket-balance {
+    padding: 0.8rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+/* Pockets List in Settings */
+.pockets-list {
+    margin-bottom: 1rem;
+}
+
+.pocket-item {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid;
+}
+
+.pocket-info {
+    flex: 1;
+    margin-left: 1rem;
+    min-width: 0; /* Allows text to wrap properly */
+}
+
+.pocket-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pocket-actions button {
+    min-width: 60px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.pocket-actions .edit-btn {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.pocket-actions .edit-btn:hover {
+    background-color: #d0d0d0;
+    transform: translateY(-2px);
+}
+
+.pocket-actions .delete-btn {
+    /* Base styles are now in the consolidated forms.css */
+}
+
+.pocket-actions .delete-btn:hover {
+    /* Hover styles are now in the consolidated forms.css */
+}
+
+.pockets-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Charts Container */
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
 .chart-card {
-    flex: 1;
     background-color: white;
-    border: 2px solid var(--border-color);
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
+    border-radius: 10px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .chart-card h3 {
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    margin-top: 0;
+    font-size: 1rem;
     margin-bottom: 1rem;
-    color: var(--text-color);
-    opacity: 0.8;
-    text-align: center;
+    color: #333;
 }
 
 .chart-wrapper {
     position: relative;
-    width: 100%;
-    height: 200px;
+    height: 250px;
 }
 
-/* Time Filters */
+/* Time Period Filters */
 .time-filters {
     display: flex;
-    gap: 0.5rem;
     margin-bottom: 2rem;
-    justify-content: center;
+    background-color: white;
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .time-filter {
-    background-color: white;
-    color: var(--dark-color);
-    border: 2px solid var(--border-color);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    background: none;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #555;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .time-filter:hover {
-    background-color: var(--light-color);
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0px var(--border-color);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .time-filter.active {
     background-color: var(--primary-color);
     color: white;
-    border-color: var(--border-color);
-    box-shadow: 3px 3px 0px var(--border-color);
 }
 
-/* Transaction Lists */
-.recent-transactions, 
-.transactions-list, 
-.subscriptions-list {
+/* Transactions */
+.transaction-list {
     background-color: white;
-    border: 2px solid var(--border-color);
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
-.recent-transactions h3,
-.transactions-list h3,
-.subscriptions-list h3 {
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
-    color: var(--text-color);
-    opacity: 0.8;
-}
-
-.transaction-item, 
-.subscription-item {
+.transaction-item {
+    display: flex;
     padding: 1rem;
-    border: 1px solid var(--border-color);
-    margin-bottom: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: var(--transition);
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+    align-items: flex-start;
 }
 
-.transaction-item:hover,
-.subscription-item:hover {
-    background-color: var(--light-color);
-    transform: translateX(2px);
-    box-shadow: 2px 2px 0px var(--border-color);
+.transaction-item:last-child {
+    border-bottom: none;
 }
 
-.transaction-item:last-child,
-.subscription-item:last-child {
-    margin-bottom: 0;
-}
-
-.transaction-info,
-.subscription-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 1;
+.transaction-category {
+    margin-right: 1rem;
 }
 
 .category-icon {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
+    background-color: #f5f5f5;
     border-radius: 50%;
-    background-color: var(--primary-color);
-    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 0.875rem;
+    font-size: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-right: 0.75rem;
 }
 
-.transaction-details,
-.subscription-details {
+.transaction-details {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
-.transaction-title,
-.subscription-title {
-    font-weight: 700;
+.transaction-name {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    align-items: center;
 }
 
-.transaction-date,
-.subscription-date {
-    font-size: 0.75rem;
-    opacity: 0.7;
+.transaction-name span:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
 }
 
-.transaction-amount,
-.subscription-amount {
-    font-weight: 700;
+.transaction-amount {
+    font-weight: 500;
 }
 
-.income-amount {
-    color: var(--secondary-color);
+.transaction-amount.income {
+    color: var(--success-color);
 }
 
-.expense-amount {
-    color: var(--primary-color);
+.transaction-amount.expense {
+    color: var(--danger-color);
+}
+
+.transaction-meta {
+    font-size: 0.85rem;
+    color: #666;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.transaction-meta span {
+    background-color: #f5f5f5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+}
+
+.delete-transaction {
+    background: none;
+    border: none;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #999;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.transaction-item:hover .delete-transaction {
+    opacity: 1;
+}
+
+.delete-transaction:hover {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.recent-transactions {
+    background-color: white;
+    border-radius: 10px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.recent-transactions h3 {
+    margin-top: 0;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: #333;
 }
 
 .view-all {
-    display: inline-block;
+    display: block;
+    text-align: center;
     margin-top: 1rem;
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-transform: uppercase;
     color: var(--primary-color);
-    letter-spacing: 0.5px;
-    transition: var(--transition);
+    text-decoration: none;
+    font-size: 0.9rem;
 }
 
 .view-all:hover {
-    transform: translateX(3px);
     text-decoration: underline;
+}
+
+/* Category Items */
+.category-section {
+    margin-bottom: 1.5rem;
+}
+
+.category-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 6px;
+    padding: 0.5rem 0.8rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.category-item span {
+    margin-right: 0.5rem;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #999;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.delete-btn:hover {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* Empty States */
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+/* No Data Messages */
+.no-data-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #999;
+    font-size: 0.9rem;
 } 

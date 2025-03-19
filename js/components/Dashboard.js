@@ -19,6 +19,7 @@ export default class Dashboard {
         this.expensesElement = document.getElementById('total-expenses');
         this.subscriptionsElement = document.getElementById('total-subscriptions');
         this.recentTransactionsList = document.getElementById('recent-transactions-list');
+        this.dashboardPocketsContainer = document.getElementById('dashboard-pockets');
         
         // Add event listeners for period filters
         this.initTimeFilters();
@@ -55,12 +56,73 @@ export default class Dashboard {
         this.expensesElement.textContent = formatNumber(summary.totalExpenses);
         this.subscriptionsElement.textContent = formatNumber(subscriptionCost);
         
+        // Render pockets
+        this.renderPockets();
+        
         // Generate and update charts
         this.renderIncomeExpenseChart(summary);
         this.renderExpenseCategoryChart(summary);
         
         // Show recent transactions (most recent 5)
         this.renderRecentTransactions(transactions);
+    }
+    
+    /**
+     * Render pocket cards on the dashboard
+     */
+    renderPockets() {
+        if (!this.dashboardPocketsContainer) return;
+        
+        this.dashboardPocketsContainer.innerHTML = '';
+        
+        const pockets = this.store.getState().pockets;
+        const currency = this.store.getState().currency;
+        
+        if (pockets.length === 0) {
+            this.dashboardPocketsContainer.innerHTML = '<div class="empty-state">No pockets found</div>';
+            return;
+        }
+        
+        pockets.forEach(pocket => {
+            const pocketCard = document.createElement('div');
+            pocketCard.className = 'pocket-card';
+            pocketCard.style.borderColor = pocket.color;
+            
+            pocketCard.innerHTML = `
+                <div class="pocket-card-header" style="background-color: ${pocket.color}">
+                    <div class="pocket-icon">
+                        ${this.getPocketIconHTML(pocket.icon)}
+                    </div>
+                    <div class="pocket-name">${pocket.name}</div>
+                </div>
+                <div class="pocket-balance">
+                    <span class="currency-symbol">${currency}</span> 
+                    <span class="balance-amount">${formatNumber(pocket.balance)}</span>
+                </div>
+            `;
+            
+            this.dashboardPocketsContainer.appendChild(pocketCard);
+        });
+    }
+    
+    /**
+     * Get HTML for pocket icon
+     * @param {string} icon - The icon name
+     * @returns {string} The HTML for the icon
+     */
+    getPocketIconHTML(icon) {
+        const icons = {
+            cash: '💵',
+            bank: '🏦',
+            wallet: '👛',
+            card: '💳',
+            savings: '🏺',
+            invest: '📈',
+            crypto: '🪙',
+            piggy: '🐖'
+        };
+        
+        return icons[icon] || icons.wallet;
     }
     
     /**
@@ -108,9 +170,6 @@ export default class Dashboard {
                     }
                 },
                 plugins: {
-                    legend: {
-                        display: false
-                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -124,88 +183,82 @@ export default class Dashboard {
     }
     
     /**
-     * Render the expense categories chart
+     * Render the expense category chart
      * @param {Object} summary - Financial summary data
      */
     renderExpenseCategoryChart(summary) {
         const ctx = document.getElementById('expense-category-chart').getContext('2d');
         
-        // Prepare data for the chart
-        const expenseCategories = Object.keys(summary.expensesByCategory);
-        const expenseValues = Object.values(summary.expensesByCategory);
+        // Check if there are expenses to display
+        if (!summary || !summary.expensesByCategory || Object.keys(summary.expensesByCategory).length === 0) {
+            // Hide canvas and show "No Data" message
+            ctx.canvas.style.display = 'none';
+            
+            const noDataElem = document.createElement('div');
+            noDataElem.className = 'no-data-message';
+            noDataElem.textContent = 'No expense data available';
+            
+            const parent = ctx.canvas.parentElement;
+            if (!parent.querySelector('.no-data-message')) {
+                parent.appendChild(noDataElem);
+            }
+            
+            return;
+        }
         
-        // Generate colors
-        const backgroundColors = expenseCategories.map(() => {
+        // Show canvas if it was hidden
+        ctx.canvas.style.display = 'block';
+        
+        // Remove any "No Data" message
+        const parent = ctx.canvas.parentElement;
+        const noDataElem = parent.querySelector('.no-data-message');
+        if (noDataElem) {
+            parent.removeChild(noDataElem);
+        }
+        
+        // Extract categories and amounts
+        const categories = Object.keys(summary.expensesByCategory);
+        const amounts = categories.map(category => summary.expensesByCategory[category]);
+        
+        // Generate colors for each category
+        const backgroundColors = categories.map(() => {
             const color = getRandomColor();
-            return color.replace('rgb', 'rgba').replace(')', ', 0.7)');
+            return `rgba(${color.r}, ${color.g}, ${color.b}, 0.7)`;
         });
         
-        const borderColors = backgroundColors.map(color => 
-            color.replace('0.7', '1')
-        );
+        const borderColors = backgroundColors.map(color => {
+            return color.replace('0.7', '1');
+        });
         
         // Destroy existing chart if it exists
         if (this.expenseCategoryChart) {
             this.expenseCategoryChart.destroy();
         }
         
-        // If there's no expense data, show a message
-        if (expenseCategories.length === 0) {
-            ctx.canvas.style.display = 'none';
-            
-            // Add no data message if it doesn't exist
-            let noDataMsg = ctx.canvas.parentNode.querySelector('.no-data-message');
-            if (!noDataMsg) {
-                noDataMsg = document.createElement('div');
-                noDataMsg.className = 'no-data-message';
-                noDataMsg.textContent = 'No expense data available for this period';
-                ctx.canvas.parentNode.appendChild(noDataMsg);
-            }
-            
-            return;
-        }
-        
-        // Remove any no data message
-        const noDataMsg = ctx.canvas.parentNode.querySelector('.no-data-message');
-        if (noDataMsg) {
-            noDataMsg.remove();
-        }
-        
-        // Show the canvas
-        ctx.canvas.style.display = 'block';
-        
         // Create new chart
         this.expenseCategoryChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: expenseCategories,
+                labels: categories,
                 datasets: [{
-                    data: expenseValues,
+                    data: amounts,
                     backgroundColor: backgroundColors,
                     borderColor: borderColors,
-                    borderWidth: 2
+                    borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            boxWidth: 15,
-                            font: {
-                                size: 10
-                            }
-                        }
-                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                const value = context.raw;
+                                const label = context.label || '';
+                                const value = context.raw || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${context.label}: ${value.toLocaleString()} (${percentage}%)`;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value.toLocaleString()} (${percentage}%)`;
                             }
                         }
                     }
@@ -215,47 +268,52 @@ export default class Dashboard {
     }
     
     /**
-     * Render the recent transactions list
-     * @param {Array} transactions - Transactions to display
+     * Render recent transactions list
+     * @param {Array} transactions - All transactions for the selected period
      */
     renderRecentTransactions(transactions) {
-        // Sort transactions by date, most recent first
-        const sortedTransactions = [...transactions].sort((a, b) => 
-            new Date(b.date) - new Date(a.date)
-        );
+        if (!this.recentTransactionsList) return;
         
-        // Get only the most recent 5
-        const recentTransactions = sortedTransactions.slice(0, 5);
-        
-        // Clear the list
         this.recentTransactionsList.innerHTML = '';
         
+        // Sort by date (most recent first) and take only the most recent 5
+        const recentTransactions = [...transactions]
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 5);
+        
         if (recentTransactions.length === 0) {
-            this.recentTransactionsList.innerHTML = '<div class="no-data">No recent transactions</div>';
+            this.recentTransactionsList.innerHTML = '<div class="empty-state">No recent transactions</div>';
             return;
         }
         
-        // Add each transaction
+        const { currency, pockets } = this.store.getState();
+        
         recentTransactions.forEach(transaction => {
-            const item = document.createElement('div');
-            item.className = 'transaction-item';
+            const transactionElement = document.createElement('div');
+            transactionElement.className = `transaction-item ${transaction.type}`;
             
-            const amountClass = transaction.type === 'income' ? 'income-amount' : 'expense-amount';
-            const sign = transaction.type === 'income' ? '+' : '-';
-            const currency = this.store.getState().currency;
+            const pocket = pockets.find(p => p.id === transaction.pocketId) || { name: 'Unknown' };
+            const isTransfer = transaction.category === 'Transfer';
             
-            item.innerHTML = `
-                <div class="transaction-info">
-                    <div class="category-icon">${getCategoryInitial(transaction.category)}</div>
-                    <div class="transaction-details">
-                        <div class="transaction-title">${transaction.category}</div>
-                        <div class="transaction-date">${formatDate(transaction.date)}</div>
+            const transactionContent = `
+                <div class="transaction-category">
+                    <span class="category-icon">${getCategoryInitial(transaction.category)}</span>
+                </div>
+                <div class="transaction-details">
+                    <div class="transaction-name">
+                        <span>${transaction.category}</span>
+                        <span class="transaction-amount ${transaction.type}">${currency} ${formatNumber(transaction.amount)}</span>
+                    </div>
+                    <div class="transaction-meta">
+                        <span class="transaction-date">${formatDate(transaction.date)}</span>
+                        <span class="transaction-pocket">${pocket.name}</span>
+                        ${transaction.description ? `<span class="transaction-description">${transaction.description}</span>` : ''}
                     </div>
                 </div>
-                <div class="transaction-amount ${amountClass}">${sign} ${currency} ${formatNumber(transaction.amount)}</div>
             `;
             
-            this.recentTransactionsList.appendChild(item);
+            transactionElement.innerHTML = transactionContent;
+            this.recentTransactionsList.appendChild(transactionElement);
         });
     }
 } 

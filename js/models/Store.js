@@ -8,13 +8,20 @@ export default class Store {
         expense: ['Food', 'Housing', 'Transportation', 'Entertainment', 'Utilities', 'Healthcare', 'Education', 'Shopping', 'Personal', 'Debt', 'Savings', 'Other Expenses']
     };
 
+    // Default pockets for the application
+    static DEFAULT_POCKETS = [
+        { id: '1', name: 'Cash', balance: 0, color: '#4caf50', icon: 'cash' },
+        { id: '2', name: 'Bank Account', balance: 0, color: '#2196f3', icon: 'bank' }
+    ];
+
     // Local Storage Keys
     static STORAGE_KEYS = {
         TRANSACTIONS: 'budgetin_transactions',
         SUBSCRIPTIONS: 'budgetin_subscriptions',
         CATEGORIES: 'budgetin_categories',
         CURRENCY: 'budgetin_currency',
-        CUSTOM_CURRENCIES: 'budgetin_custom_currencies'
+        CUSTOM_CURRENCIES: 'budgetin_custom_currencies',
+        POCKETS: 'budgetin_pockets'
     };
 
     constructor() {
@@ -26,7 +33,8 @@ export default class Store {
             currentPage: 'transactions',
             currentPeriod: 'month',
             currency: 'Rp', // Default to Indonesian Rupiah
-            customCurrencies: [] // Store custom currencies
+            customCurrencies: [], // Store custom currencies
+            pockets: [...Store.DEFAULT_POCKETS] // Initialize with default pockets
         };
 
         // Load data from local storage
@@ -60,6 +68,7 @@ export default class Store {
         const storedCategories = localStorage.getItem(Store.STORAGE_KEYS.CATEGORIES);
         const storedCurrency = localStorage.getItem(Store.STORAGE_KEYS.CURRENCY);
         const storedCustomCurrencies = localStorage.getItem(Store.STORAGE_KEYS.CUSTOM_CURRENCIES);
+        const storedPockets = localStorage.getItem(Store.STORAGE_KEYS.POCKETS);
         
         if (storedTransactions) {
             this.state.transactions = JSON.parse(storedTransactions);
@@ -80,6 +89,10 @@ export default class Store {
         if (storedCustomCurrencies) {
             this.state.customCurrencies = JSON.parse(storedCustomCurrencies);
         }
+
+        if (storedPockets) {
+            this.state.pockets = JSON.parse(storedPockets);
+        }
     }
 
     /**
@@ -91,6 +104,7 @@ export default class Store {
         localStorage.setItem(Store.STORAGE_KEYS.CATEGORIES, JSON.stringify(this.state.categories));
         localStorage.setItem(Store.STORAGE_KEYS.CURRENCY, this.state.currency);
         localStorage.setItem(Store.STORAGE_KEYS.CUSTOM_CURRENCIES, JSON.stringify(this.state.customCurrencies));
+        localStorage.setItem(Store.STORAGE_KEYS.POCKETS, JSON.stringify(this.state.pockets));
     }
 
     /**
@@ -98,10 +112,27 @@ export default class Store {
      * @param {Object} transaction - The transaction to add
      */
     addTransaction(transaction) {
-        this.state.transactions.push({
+        const newTransaction = {
             ...transaction,
             id: Date.now().toString()
-        });
+        };
+        
+        this.state.transactions.push(newTransaction);
+        
+        // Update pocket balance based on transaction type and pocket
+        if (transaction.pocketId) {
+            const pocketIndex = this.state.pockets.findIndex(p => p.id === transaction.pocketId);
+            if (pocketIndex !== -1) {
+                const pocket = this.state.pockets[pocketIndex];
+                if (transaction.type === 'income') {
+                    pocket.balance += transaction.amount;
+                } else if (transaction.type === 'expense') {
+                    pocket.balance -= transaction.amount;
+                }
+                this.state.pockets[pocketIndex] = pocket;
+            }
+        }
+        
         this.saveToStorage();
     }
 
@@ -110,6 +141,21 @@ export default class Store {
      * @param {string} transactionId - The ID of the transaction to delete
      */
     deleteTransaction(transactionId) {
+        const transaction = this.state.transactions.find(t => t.id === transactionId);
+        if (transaction && transaction.pocketId) {
+            // Reverse the effect on pocket balance
+            const pocketIndex = this.state.pockets.findIndex(p => p.id === transaction.pocketId);
+            if (pocketIndex !== -1) {
+                const pocket = this.state.pockets[pocketIndex];
+                if (transaction.type === 'income') {
+                    pocket.balance -= transaction.amount;
+                } else if (transaction.type === 'expense') {
+                    pocket.balance += transaction.amount;
+                }
+                this.state.pockets[pocketIndex] = pocket;
+            }
+        }
+        
         this.state.transactions = this.state.transactions.filter(
             transaction => transaction.id !== transactionId
         );
@@ -175,6 +221,138 @@ export default class Store {
     }
 
     /**
+     * Add a new pocket
+     * @param {Object} pocket - The pocket to add
+     * @returns {string} The ID of the new pocket
+     */
+    addPocket(pocket) {
+        const newPocket = {
+            ...pocket,
+            id: Date.now().toString(),
+            balance: pocket.initialBalance || 0
+        };
+        
+        // Remove initialBalance property
+        if (newPocket.initialBalance) {
+            delete newPocket.initialBalance;
+        }
+        
+        this.state.pockets.push(newPocket);
+        this.saveToStorage();
+        return newPocket.id;
+    }
+
+    /**
+     * Update a pocket
+     * @param {string} pocketId - The ID of the pocket to update
+     * @param {Object} pocketData - The new pocket data
+     * @returns {boolean} True if the pocket was updated, false otherwise
+     */
+    updatePocket(pocketId, pocketData) {
+        const pocketIndex = this.state.pockets.findIndex(p => p.id === pocketId);
+        if (pocketIndex !== -1) {
+            // Keep the current balance unless explicitly provided
+            const currentBalance = this.state.pockets[pocketIndex].balance;
+            this.state.pockets[pocketIndex] = {
+                ...this.state.pockets[pocketIndex],
+                ...pocketData,
+                balance: pocketData.balance !== undefined ? pocketData.balance : currentBalance
+            };
+            this.saveToStorage();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Delete a pocket
+     * @param {string} pocketId - The ID of the pocket to delete
+     * @returns {boolean} True if the pocket was deleted, false otherwise
+     */
+    deletePocket(pocketId) {
+        // Check if pocket is in use
+        const isInUse = this.state.transactions.some(
+            transaction => transaction.pocketId === pocketId
+        );
+        
+        // Don't allow deleting if it's the only pocket
+        if (this.state.pockets.length <= 1) {
+            return false;
+        }
+        
+        if (!isInUse) {
+            this.state.pockets = this.state.pockets.filter(
+                pocket => pocket.id !== pocketId
+            );
+            this.saveToStorage();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Transfer money between pockets
+     * @param {string} fromPocketId - The ID of the source pocket
+     * @param {string} toPocketId - The ID of the destination pocket
+     * @param {number} amount - The amount to transfer
+     * @returns {boolean} True if the transfer was successful, false otherwise
+     */
+    transferBetweenPockets(fromPocketId, toPocketId, amount) {
+        if (fromPocketId === toPocketId) return false;
+        
+        const fromPocketIndex = this.state.pockets.findIndex(p => p.id === fromPocketId);
+        const toPocketIndex = this.state.pockets.findIndex(p => p.id === toPocketId);
+        
+        if (fromPocketIndex === -1 || toPocketIndex === -1) return false;
+        
+        const fromPocket = this.state.pockets[fromPocketIndex];
+        const toPocket = this.state.pockets[toPocketIndex];
+        
+        // Check if source pocket has enough balance
+        if (fromPocket.balance < amount) return false;
+        
+        // Perform the transfer
+        fromPocket.balance -= amount;
+        toPocket.balance += amount;
+        
+        // Update pockets
+        this.state.pockets[fromPocketIndex] = fromPocket;
+        this.state.pockets[toPocketIndex] = toPocket;
+        
+        // Add transfer transactions
+        const transferDate = new Date().toISOString().split('T')[0];
+        
+        // From pocket transaction (expense)
+        this.state.transactions.push({
+            id: Date.now().toString(),
+            type: 'expense',
+            amount: amount,
+            category: 'Transfer',
+            date: transferDate,
+            description: `Transfer to ${toPocket.name}`,
+            pocketId: fromPocketId,
+            transferId: Date.now().toString(),
+            transferToPocketId: toPocketId
+        });
+        
+        // To pocket transaction (income)
+        this.state.transactions.push({
+            id: (Date.now() + 1).toString(),
+            type: 'income',
+            amount: amount,
+            category: 'Transfer',
+            date: transferDate,
+            description: `Transfer from ${fromPocket.name}`,
+            pocketId: toPocketId,
+            transferId: Date.now().toString(),
+            transferFromPocketId: fromPocketId
+        });
+        
+        this.saveToStorage();
+        return true;
+    }
+
+    /**
      * Export all data from the store
      * @returns {Object} The exported data
      */
@@ -184,7 +362,8 @@ export default class Store {
             subscriptions: this.state.subscriptions,
             categories: this.state.categories,
             currency: this.state.currency,
-            customCurrencies: this.state.customCurrencies
+            customCurrencies: this.state.customCurrencies,
+            pockets: this.state.pockets
         };
     }
 
@@ -213,6 +392,12 @@ export default class Store {
             this.state.customCurrencies = data.customCurrencies;
         }
         
+        if (data.pockets && Array.isArray(data.pockets)) {
+            this.state.pockets = data.pockets;
+        } else {
+            this.state.pockets = [...Store.DEFAULT_POCKETS];
+        }
+        
         this.saveToStorage();
         return true;
     }
@@ -224,6 +409,7 @@ export default class Store {
         this.state.transactions = [];
         this.state.subscriptions = [];
         this.state.categories = {...Store.DEFAULT_CATEGORIES};
+        this.state.pockets = [...Store.DEFAULT_POCKETS];
         // Keep the currency setting when clearing data
         this.saveToStorage();
     }

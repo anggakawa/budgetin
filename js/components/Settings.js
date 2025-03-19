@@ -1,3 +1,5 @@
+import Store from '../models/Store.js';
+
 /**
  * Settings component for handling application settings
  */
@@ -59,6 +61,46 @@ export default class Settings {
         
         document.getElementById('clear-data').addEventListener('click', () => {
             this.clearAllData();
+        });
+
+        // Add pocket button
+        document.getElementById('add-pocket-btn').addEventListener('click', () => {
+            this.showAddPocketModal();
+        });
+
+        // Save pocket button
+        document.getElementById('save-pocket-btn').addEventListener('click', () => {
+            this.savePocket();
+        });
+
+        // Transfer between pockets button
+        document.getElementById('transfer-btn').addEventListener('click', () => {
+            this.showTransferModal();
+        });
+
+        // Perform transfer button
+        document.getElementById('perform-transfer-btn').addEventListener('click', () => {
+            this.performTransfer();
+        });
+
+        // Close pocket modal
+        document.querySelector('#pocket-modal .close').addEventListener('click', () => {
+            this.hidePocketModal();
+        });
+
+        // Close transfer modal
+        document.querySelector('#transfer-modal .close').addEventListener('click', () => {
+            this.hideTransferModal();
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target.id === 'pocket-modal') {
+                this.hidePocketModal();
+            }
+            if (event.target.id === 'transfer-modal') {
+                this.hideTransferModal();
+            }
         });
     }
     
@@ -143,6 +185,181 @@ export default class Settings {
         this.updateCurrencyDropdown();
         this.updateCurrencySymbols();
     }
+
+    /**
+     * Show the add/edit pocket modal
+     * @param {string} pocketId - The ID of the pocket to edit (null for new pocket)
+     */
+    showAddPocketModal(pocketId = null) {
+        const pocketModal = document.getElementById('pocket-modal');
+        const pocketForm = document.getElementById('pocket-form');
+        const modalTitle = pocketModal.querySelector('h2');
+        const pocketNameInput = document.getElementById('pocket-name');
+        const pocketColorInput = document.getElementById('pocket-color');
+        const pocketIconSelect = document.getElementById('pocket-icon');
+        const pocketInitialBalanceInput = document.getElementById('pocket-initial-balance');
+        const pocketInitialBalanceGroup = document.getElementById('initial-balance-group');
+        
+        if (pocketId) {
+            // Edit mode
+            const pocket = this.store.getState().pockets.find(p => p.id === pocketId);
+            if (pocket) {
+                modalTitle.textContent = 'Edit Pocket';
+                pocketNameInput.value = pocket.name;
+                pocketColorInput.value = pocket.color;
+                pocketIconSelect.value = pocket.icon;
+                pocketForm.dataset.pocketId = pocketId;
+                pocketInitialBalanceGroup.style.display = 'none';
+            }
+        } else {
+            // Add mode
+            modalTitle.textContent = 'Add Pocket';
+            pocketNameInput.value = '';
+            pocketColorInput.value = '#3498db';
+            pocketIconSelect.value = 'wallet';
+            pocketInitialBalanceInput.value = '0';
+            pocketForm.dataset.pocketId = '';
+            pocketInitialBalanceGroup.style.display = 'block';
+        }
+        
+        pocketModal.style.display = 'flex';
+    }
+
+    /**
+     * Hide the pocket modal
+     */
+    hidePocketModal() {
+        document.getElementById('pocket-modal').style.display = 'none';
+    }
+
+    /**
+     * Show the transfer between pockets modal
+     */
+    showTransferModal() {
+        const transferModal = document.getElementById('transfer-modal');
+        const fromPocketSelect = document.getElementById('from-pocket');
+        const toPocketSelect = document.getElementById('to-pocket');
+        const transferAmountInput = document.getElementById('transfer-amount');
+        
+        // Reset form
+        transferAmountInput.value = '';
+        
+        // Update pocket dropdowns
+        fromPocketSelect.innerHTML = '';
+        toPocketSelect.innerHTML = '';
+        
+        const pockets = this.store.getState().pockets;
+        const currency = this.store.getState().currency;
+        
+        pockets.forEach(pocket => {
+            const balance = typeof pocket.balance === 'number' ? pocket.balance.toFixed(2) : '0.00';
+            
+            const fromOption = document.createElement('option');
+            fromOption.value = pocket.id;
+            fromOption.textContent = `${pocket.name} (${currency} ${balance})`;
+            fromPocketSelect.appendChild(fromOption);
+            
+            const toOption = document.createElement('option');
+            toOption.value = pocket.id;
+            toOption.textContent = `${pocket.name} (${currency} ${balance})`;
+            toPocketSelect.appendChild(toOption);
+        });
+        
+        // Select different pockets by default
+        if (pockets.length > 1) {
+            toPocketSelect.selectedIndex = 1;
+        }
+        
+        transferModal.style.display = 'flex';
+    }
+
+    /**
+     * Hide the transfer modal
+     */
+    hideTransferModal() {
+        document.getElementById('transfer-modal').style.display = 'none';
+    }
+
+    /**
+     * Save a pocket (add new or update existing)
+     */
+    savePocket() {
+        const pocketForm = document.getElementById('pocket-form');
+        const pocketId = pocketForm.dataset.pocketId;
+        const name = document.getElementById('pocket-name').value.trim();
+        const color = document.getElementById('pocket-color').value;
+        const icon = document.getElementById('pocket-icon').value;
+        
+        if (!name) {
+            alert('Please enter a pocket name');
+            return;
+        }
+        
+        if (pocketId) {
+            // Update existing pocket
+            const success = this.store.updatePocket(pocketId, { name, color, icon });
+            if (success) {
+                this.hidePocketModal();
+                this.render();
+            } else {
+                alert('Failed to update pocket');
+            }
+        } else {
+            // Add new pocket
+            const initialBalance = parseFloat(document.getElementById('pocket-initial-balance').value) || 0;
+            const newPocketId = this.store.addPocket({ name, color, icon, initialBalance });
+            if (newPocketId) {
+                this.hidePocketModal();
+                this.render();
+            } else {
+                alert('Failed to add pocket');
+            }
+        }
+    }
+
+    /**
+     * Delete a pocket
+     * @param {string} pocketId - The ID of the pocket to delete
+     */
+    deletePocket(pocketId) {
+        if (confirm('Are you sure you want to delete this pocket? This action cannot be undone.')) {
+            const success = this.store.deletePocket(pocketId);
+            if (success) {
+                this.render();
+            } else {
+                alert('Cannot delete this pocket as it is being used by transactions or it is the only pocket');
+            }
+        }
+    }
+
+    /**
+     * Perform transfer between pockets
+     */
+    performTransfer() {
+        const fromPocketId = document.getElementById('from-pocket').value;
+        const toPocketId = document.getElementById('to-pocket').value;
+        const amountInput = document.getElementById('transfer-amount').value;
+        const amount = parseFloat(amountInput);
+        
+        if (!amount || isNaN(amount) || amount <= 0) {
+            alert('Please enter a valid transfer amount');
+            return;
+        }
+        
+        if (fromPocketId === toPocketId) {
+            alert('Please select different pockets for transfer');
+            return;
+        }
+        
+        const success = this.store.transferBetweenPockets(fromPocketId, toPocketId, amount);
+        
+        if (success) {
+            this.hideTransferModal();
+            this.render();
+        } else {
+            alert('Transfer failed. Please check the pocket balances and try again.');
+        }
+    }
     
     /**
      * Export application data
@@ -150,13 +367,13 @@ export default class Settings {
     exportData() {
         const dataToExport = this.store.exportData();
         const dataStr = JSON.stringify(dataToExport, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         
-        const exportFileName = `budgetin_export_${new Date().toISOString().slice(0, 10)}.json`;
+        const exportFileDefaultName = 'budgetin_data.json';
         
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileName);
+        linkElement.setAttribute('download', exportFileDefaultName);
         linkElement.click();
     }
     
@@ -164,153 +381,240 @@ export default class Settings {
      * Import application data
      */
     importData() {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.json';
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
         
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
+        input.onchange = e => {
+            const file = e.target.files[0];
+            
+            if (!file) {
+                return;
+            }
             
             const reader = new FileReader();
             
-            reader.onload = (e) => {
+            reader.onload = event => {
                 try {
-                    const importedData = JSON.parse(e.target.result);
-                    const success = this.store.importData(importedData);
+                    const data = JSON.parse(event.target.result);
                     
-                    if (success) {
-                        this.updateCurrencyDropdown();
-                        this.updateCurrencySymbols();
-                        this.render();
-                        alert('Data imported successfully!');
-                    } else {
-                        alert('Error importing data. Invalid format.');
+                    if (confirm('This will replace all your current data. Are you sure you want to continue?')) {
+                        const success = this.store.importData(data);
+                        
+                        if (success) {
+                            alert('Data imported successfully');
+                            window.location.reload();
+                        } else {
+                            alert('Failed to import data');
+                        }
                     }
-                } catch (error) {
-                    alert('Error importing data. Please check the file format.');
-                    console.error('Import error:', error);
+                } catch (err) {
+                    console.error('Error parsing imported data', err);
+                    alert('Error importing data: Invalid JSON format');
                 }
             };
             
             reader.readAsText(file);
-        });
+        };
         
-        fileInput.click();
+        input.click();
     }
     
     /**
      * Clear all application data
      */
     clearAllData() {
-        if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+        if (confirm('This will delete all your data including transactions, subscriptions, and categories. This action cannot be undone. Are you sure you want to continue?')) {
             this.store.clearAllData();
-            this.render();
-            alert('All data has been cleared.');
+            alert('All data has been cleared');
+            window.location.reload();
         }
     }
     
     /**
-     * Update the currency dropdown with custom currencies
+     * Update the currency dropdown
      */
     updateCurrencyDropdown() {
         const customCurrencies = this.store.getState().customCurrencies;
-        const currentCurrency = this.store.getState().currency;
+        const currencySelect = this.currencySelect;
         
-        // Clear custom currency options
-        const options = this.currencySelect.options;
-        for (let i = options.length - 1; i >= 0; i--) {
-            if (options[i].classList.contains('custom-currency-option')) {
-                options.remove(i);
-            }
-        }
+        // Find and remove existing custom currency options
+        const customOptions = currencySelect.querySelectorAll('option.custom-currency');
+        customOptions.forEach(option => option.remove());
         
-        // Add custom currencies to the dropdown
+        // Get the "Add Custom Currency" option
+        const addCustomOption = currencySelect.querySelector('option[value="custom"]');
+        
+        // Add custom currencies before the "Add Custom Currency" option
         customCurrencies.forEach(currency => {
             const option = document.createElement('option');
             option.value = currency.symbol;
             option.textContent = `${currency.symbol} - ${currency.name}`;
-            option.classList.add('custom-currency-option');
-            this.currencySelect.insertBefore(option, this.currencySelect.lastElementChild);
+            option.classList.add('custom-currency');
+            currencySelect.insertBefore(option, addCustomOption);
         });
         
-        // Set current currency as selected
-        this.currencySelect.value = currentCurrency;
+        // Set the selected currency
+        currencySelect.value = this.store.getState().currency;
     }
     
     /**
      * Update all currency symbols in the UI
      */
     updateCurrencySymbols() {
-        const currency = this.store.getState().currency;
-        document.querySelectorAll('.currency-symbol').forEach(element => {
-            element.textContent = currency;
+        const currencySymbol = this.store.getState().currency;
+        const currencyElements = document.querySelectorAll('.currency-symbol');
+        
+        currencyElements.forEach(element => {
+            element.textContent = currencySymbol;
         });
     }
     
     /**
-     * Render categories
+     * Render the categories list
      */
     renderCategories() {
-        const categories = this.store.getState().categories;
+        const { categories } = this.store.getState();
+        
+        if (!this.categoriesList) return;
         
         this.categoriesList.innerHTML = '';
         
-        // Create section for income categories
-        const incomeSection = document.createElement('div');
-        incomeSection.className = 'category-section';
-        incomeSection.innerHTML = '<h4>Income Categories</h4>';
+        // Create sections for income and expense categories
+        const categoryTypes = ['income', 'expense'];
         
-        // Create section for expense categories
-        const expenseSection = document.createElement('div');
-        expenseSection.className = 'category-section';
-        expenseSection.innerHTML = '<h4>Expense Categories</h4>';
-        
-        // Add income categories
-        categories.income.forEach(category => {
-            const item = document.createElement('div');
-            item.className = 'category-item';
+        categoryTypes.forEach(type => {
+            const categorySection = document.createElement('div');
+            categorySection.classList.add('category-section');
             
-            item.innerHTML = `
-                <span>${category}</span>
-                <button class="delete-category" data-type="income" data-name="${category}">×</button>
-            `;
+            const typeTitle = document.createElement('h4');
+            typeTitle.textContent = type === 'income' ? 'Income Categories' : 'Expense Categories';
+            categorySection.appendChild(typeTitle);
             
-            incomeSection.appendChild(item);
-        });
-        
-        // Add expense categories
-        categories.expense.forEach(category => {
-            const item = document.createElement('div');
-            item.className = 'category-item';
+            const categoryItems = document.createElement('div');
+            categoryItems.classList.add('category-items');
             
-            item.innerHTML = `
-                <span>${category}</span>
-                <button class="delete-category" data-type="expense" data-name="${category}">×</button>
-            `;
-            
-            expenseSection.appendChild(item);
-        });
-        
-        // Add both sections to the list
-        this.categoriesList.appendChild(incomeSection);
-        this.categoriesList.appendChild(expenseSection);
-        
-        // Add event listeners to delete buttons
-        document.querySelectorAll('.delete-category').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const categoryType = e.target.getAttribute('data-type');
-                const categoryName = e.target.getAttribute('data-name');
-                this.deleteCategory(categoryType, categoryName);
+            categories[type].forEach(category => {
+                const categoryItem = document.createElement('div');
+                categoryItem.classList.add('category-item');
+                
+                const categoryName = document.createElement('span');
+                categoryName.textContent = category;
+                categoryItem.appendChild(categoryName);
+                
+                // Don't allow deletion of default categories
+                if (!this.isDefaultCategory(type, category)) {
+                    const deleteButton = document.createElement('button');
+                    deleteButton.classList.add('delete-btn');
+                    deleteButton.innerHTML = '&times;';
+                    deleteButton.addEventListener('click', () => this.deleteCategory(type, category));
+                    categoryItem.appendChild(deleteButton);
+                }
+                
+                categoryItems.appendChild(categoryItem);
             });
+            
+            categorySection.appendChild(categoryItems);
+            this.categoriesList.appendChild(categorySection);
         });
+    }
+
+    /**
+     * Render the pockets list
+     */
+    renderPockets() {
+        const pocketsList = document.getElementById('pockets-list');
+        const { pockets, currency } = this.store.getState();
+        
+        if (!pocketsList) return;
+        
+        pocketsList.innerHTML = '';
+        
+        pockets.forEach(pocket => {
+            const pocketItem = document.createElement('div');
+            pocketItem.classList.add('pocket-item');
+            pocketItem.style.borderLeftColor = pocket.color;
+            
+            const pocketIcon = document.createElement('div');
+            pocketIcon.classList.add('pocket-icon');
+            pocketIcon.textContent = this.getPocketIconHTML(pocket.icon);
+            pocketIcon.style.backgroundColor = pocket.color;
+            pocketItem.appendChild(pocketIcon);
+            
+            const pocketInfo = document.createElement('div');
+            pocketInfo.classList.add('pocket-info');
+            
+            const pocketName = document.createElement('div');
+            pocketName.classList.add('pocket-name');
+            pocketName.textContent = pocket.name;
+            pocketInfo.appendChild(pocketName);
+            
+            const pocketBalance = document.createElement('div');
+            pocketBalance.classList.add('pocket-balance');
+            const balance = typeof pocket.balance === 'number' ? pocket.balance.toFixed(2) : '0.00';
+            pocketBalance.textContent = `${currency} ${balance}`;
+            pocketInfo.appendChild(pocketBalance);
+            
+            pocketItem.appendChild(pocketInfo);
+            
+            const actionsDiv = document.createElement('div');
+            actionsDiv.classList.add('pocket-actions');
+            
+            const editButton = document.createElement('button');
+            editButton.classList.add('edit-btn');
+            editButton.textContent = 'EDIT';
+            editButton.addEventListener('click', () => this.showAddPocketModal(pocket.id));
+            actionsDiv.appendChild(editButton);
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.classList.add('delete-btn');
+            deleteButton.textContent = 'DELETE';
+            deleteButton.addEventListener('click', () => this.deletePocket(pocket.id));
+            actionsDiv.appendChild(deleteButton);
+            
+            pocketItem.appendChild(actionsDiv);
+            
+            pocketsList.appendChild(pocketItem);
+        });
+    }
+
+    /**
+     * Get HTML for pocket icon
+     * @param {string} icon - The icon name
+     * @returns {string} The HTML for the icon
+     */
+    getPocketIconHTML(icon) {
+        const icons = {
+            cash: '💵',
+            bank: '🏦',
+            wallet: '👛',
+            card: '💳',
+            savings: '🏺',
+            invest: '📈',
+            crypto: '🪙',
+            piggy: '🐖'
+        };
+        
+        return icons[icon] || icons.wallet;
     }
     
     /**
-     * Render the settings page
+     * Check if a category is a default category
+     * @param {string} type - The category type
+     * @param {string} name - The category name
+     * @returns {boolean} True if it's a default category
+     */
+    isDefaultCategory(type, name) {
+        return Array.isArray(Store.DEFAULT_CATEGORIES[type]) && 
+               Store.DEFAULT_CATEGORIES[type].includes(name);
+    }
+    
+    /**
+     * Render the settings component
      */
     render() {
         this.renderCategories();
+        this.renderPockets();
         this.updateCurrencyDropdown();
     }
 } 

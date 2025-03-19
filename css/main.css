@@ -4,6 +4,8 @@
     --secondary-color: #49c5b6;
     --tertiary-color: #ffde59;
     --danger-color: #ff3131;
+    --danger-dark: #cc0000;
+    --primary-dark: #e13d59;
     --warning-color: #ffbd59;
     --info-color: #5d5fef;
     --dark-color: #1f1235;
@@ -81,6 +83,7 @@ button:active {
     box-shadow: 1px 1px 0px var(--border-color);
 }
 
+/* Basic button.danger styling, detailed styling in forms.css */
 button.danger {
     background-color: var(--danger-color);
 } 

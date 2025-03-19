@@ -34,11 +34,49 @@ export function formatNumber(number) {
 }
 
 /**
- * Get the first letter of a category for the icon
+ * Get a category icon representation
  * @param {string} category - The category name
- * @returns {string} - The first letter
+ * @returns {string} - An emoji icon for the category
  */
 export function getCategoryInitial(category) {
+    const categoryIcons = {
+        // Income categories
+        'Salary': '💰',
+        'Bonus': '🎁',
+        'Investment': '📈',
+        'Gift': '🎀',
+        'Other Income': '💸',
+        
+        // Expense categories
+        'Food': '🍔',
+        'Groceries': '🛒',
+        'Dining': '🍽️',
+        'Housing': '🏠',
+        'Rent': '🏢',
+        'Mortgage': '🏘️',
+        'Utilities': '💡',
+        'Transportation': '🚗',
+        'Health': '⚕️',
+        'Education': '🎓',
+        'Entertainment': '🎬',
+        'Shopping': '🛍️',
+        'Travel': '✈️',
+        'Subscriptions': '📱',
+        'Personal': '👤',
+        'Bills': '📄',
+        'Insurance': '🔒',
+        'Taxes': '📊',
+        'Business': '💼',
+        'Charity': '❤️',
+        'Transfer': '↔️',
+    };
+    
+    // Return the emoji if the category exists in our mapping
+    if (categoryIcons[category]) {
+        return categoryIcons[category];
+    }
+    
+    // Default: return the first letter of the category
     return category.charAt(0).toUpperCase();
 }
 
@@ -147,14 +185,28 @@ export function calculateTotalSubscriptionCost(subscriptions) {
 }
 
 /**
- * Generate a random color code for charts
- * @returns {string} - RGB color string
+ * Get a random color from a predefined color palette
+ * @returns {Object} - Color object with r, g, b properties
  */
 export function getRandomColor() {
-    const r = Math.floor(Math.random() * 200 + 55);
-    const g = Math.floor(Math.random() * 200 + 55);
-    const b = Math.floor(Math.random() * 200 + 55);
-    return `rgb(${r}, ${g}, ${b})`;
+    // Predefined color palette with distinct, high-contrast colors
+    const colors = [
+        { r: 255, g: 99, b: 132 },  // Red
+        { r: 54, g: 162, b: 235 },  // Blue
+        { r: 255, g: 206, b: 86 },  // Yellow
+        { r: 75, g: 192, b: 192 },  // Teal
+        { r: 153, g: 102, b: 255 }, // Purple
+        { r: 255, g: 159, b: 64 },  // Orange
+        { r: 76, g: 175, b: 80 },   // Green
+        { r: 121, g: 85, b: 72 },   // Brown
+        { r: 63, g: 81, b: 181 },   // Indigo
+        { r: 0, g: 150, b: 136 },   // Mint
+        { r: 233, g: 30, b: 99 },   // Pink
+        { r: 96, g: 125, b: 139 }   // Blue-gray
+    ];
+    
+    // Return a random color from the palette
+    return colors[Math.floor(Math.random() * colors.length)];
 }
 
 /**

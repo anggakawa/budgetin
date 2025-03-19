@@ -1,0 +1,161 @@
+/* Responsive CSS */
+
+@media (max-width: 1200px) {
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .pocket-card {
+        width: 100%;
+    }
+}
+
+@media (max-width: 992px) {
+    .section-grid, 
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .content-with-sidebar {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+        margin-top: 1rem;
+    }
+    
+    .pocket-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-container {
+        padding: 0 1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    
+    .navbar-menu {
+        margin-left: 0;
+    }
+    
+    .navbar-item {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .pocket-card {
+        margin-bottom: 1rem;
+    }
+    
+    .pocket-cards-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .pocket-item {
+        flex-wrap: wrap;
+    }
+    
+    .pocket-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+    }
+    
+    .transaction-name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .transaction-name span:first-child {
+        max-width: 100%;
+    }
+    
+    .transaction-amount {
+        align-self: flex-end;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 1rem;
+    }
+    
+    .tabs {
+        flex-direction: column;
+    }
+    
+    .tab {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .section-title {
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-controls {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .filter-control {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .transaction-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .transaction-meta span {
+        margin-right: 0;
+    }
+    
+    .stats-card {
+        padding: 0.75rem;
+    }
+    
+    .stats-value {
+        font-size: 1.2rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+} 

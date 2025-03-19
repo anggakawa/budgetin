@@ -1,7 +1,7 @@
 import { formatNumber, formatDate, formatBillingCycle, getCategoryInitial } from '../utils/helpers.js';
 
 /**
- * Subscriptions component for handling subscriptions UI and functionality
+ * Subscriptions component for handling subscription functionality
  */
 export default class Subscriptions {
     /**
@@ -18,9 +18,9 @@ export default class Subscriptions {
         this.subscriptionNameInput = document.getElementById('subscription-name');
         this.subscriptionAmountInput = document.getElementById('subscription-amount');
         this.subscriptionCategorySelect = document.getElementById('subscription-category');
-        this.subscriptionBillingCycleSelect = document.getElementById('subscription-billing-cycle');
-        this.subscriptionNextBillingInput = document.getElementById('subscription-next-billing');
-        this.subscriptionDescriptionInput = document.getElementById('subscription-description');
+        this.subscriptionCycleSelect = document.getElementById('subscription-cycle');
+        this.subscriptionNextDateInput = document.getElementById('subscription-next-date');
+        this.subscriptionPocketSelect = document.getElementById('subscription-pocket');
         
         // Set up event listeners
         this.initEventListeners();
@@ -38,6 +38,11 @@ export default class Subscriptions {
         
         // Modal close button
         document.querySelector('#subscription-modal .close').addEventListener('click', () => {
+            this.hideModal();
+        });
+
+        // Modal cancel button
+        document.querySelector('#subscription-modal .modal-cancel').addEventListener('click', () => {
             this.hideModal();
         });
         
@@ -58,11 +63,11 @@ export default class Subscriptions {
     }
     
     /**
-     * Set the current date in the next billing date field
+     * Set the current date in the date input field
      */
     setCurrentDate() {
         const today = new Date().toISOString().split('T')[0];
-        this.subscriptionNextBillingInput.value = today;
+        this.subscriptionNextDateInput.value = today;
     }
     
     /**
@@ -71,6 +76,7 @@ export default class Subscriptions {
     showModal() {
         document.getElementById('subscription-modal').style.display = 'flex';
         this.updateCategoryDropdown();
+        this.updatePocketDropdown();
     }
     
     /**
@@ -81,19 +87,34 @@ export default class Subscriptions {
     }
     
     /**
-     * Update the category dropdown
+     * Update the category dropdown for subscriptions
      */
     updateCategoryDropdown() {
-        // Use expense categories for subscriptions
-        const categories = this.store.getState().categories.expense;
+        const expenseCategories = this.store.getState().categories.expense;
         
         this.subscriptionCategorySelect.innerHTML = '';
         
-        categories.forEach(category => {
+        expenseCategories.forEach(category => {
             const option = document.createElement('option');
             option.value = category;
             option.textContent = category;
             this.subscriptionCategorySelect.appendChild(option);
+        });
+    }
+
+    /**
+     * Update the pocket dropdown
+     */
+    updatePocketDropdown() {
+        const pockets = this.store.getState().pockets;
+        
+        this.subscriptionPocketSelect.innerHTML = '';
+        
+        pockets.forEach(pocket => {
+            const option = document.createElement('option');
+            option.value = pocket.id;
+            option.textContent = pocket.name;
+            this.subscriptionPocketSelect.appendChild(option);
         });
     }
     
@@ -105,9 +126,9 @@ export default class Subscriptions {
             name: this.subscriptionNameInput.value,
             amount: parseFloat(this.subscriptionAmountInput.value),
             category: this.subscriptionCategorySelect.value,
-            billingCycle: this.subscriptionBillingCycleSelect.value,
-            nextBillingDate: this.subscriptionNextBillingInput.value,
-            description: this.subscriptionDescriptionInput.value || '',
+            billingCycle: this.subscriptionCycleSelect.value,
+            nextBillingDate: this.subscriptionNextDateInput.value,
+            pocketId: this.subscriptionPocketSelect.value,
         };
         
         this.store.addSubscription(subscription);
@@ -115,30 +136,8 @@ export default class Subscriptions {
     }
     
     /**
-     * Calculate monthly equivalent cost
-     * @param {Object} subscription - The subscription object
-     * @returns {number} - Monthly cost equivalent
-     */
-    calculateMonthlyCost(subscription) {
-        const amount = parseFloat(subscription.amount);
-        
-        switch (subscription.billingCycle) {
-            case 'weekly':
-                return amount * 4.33; // Average weeks in a month
-            case 'monthly':
-                return amount;
-            case 'quarterly':
-                return amount / 3;
-            case 'annually':
-                return amount / 12;
-            default:
-                return amount;
-        }
-    }
-    
-    /**
      * Delete a subscription
-     * @param {string} subscriptionId - ID of the subscription to delete
+     * @param {string} subscriptionId - The ID of the subscription to delete
      */
     deleteSubscription(subscriptionId) {
         if (confirm('Are you sure you want to delete this subscription?')) {
@@ -148,64 +147,115 @@ export default class Subscriptions {
     }
     
     /**
+     * Format the billing cycle for display
+     * @param {string} cycle - The billing cycle (weekly, monthly, etc.)
+     * @returns {string} The formatted billing cycle
+     */
+    formatBillingCycle(cycle) {
+        switch (cycle) {
+            case 'weekly':
+                return 'Weekly';
+            case 'monthly':
+                return 'Monthly';
+            case 'quarterly':
+                return 'Every 3 months';
+            case 'yearly':
+                return 'Yearly';
+            default:
+                return cycle;
+        }
+    }
+    
+    /**
+     * Calculate the next billing date
+     * @param {string} currentDate - The current billing date
+     * @param {string} cycle - The billing cycle
+     * @returns {string} The next billing date
+     */
+    calculateNextBillingDate(currentDate, cycle) {
+        const date = new Date(currentDate);
+        
+        switch (cycle) {
+            case 'weekly':
+                date.setDate(date.getDate() + 7);
+                break;
+            case 'monthly':
+                date.setMonth(date.getMonth() + 1);
+                break;
+            case 'quarterly':
+                date.setMonth(date.getMonth() + 3);
+                break;
+            case 'yearly':
+                date.setFullYear(date.getFullYear() + 1);
+                break;
+            default:
+                break;
+        }
+        
+        return date.toISOString().split('T')[0];
+    }
+    
+    /**
      * Render the subscriptions list
      */
     renderSubscriptionsList() {
-        const subscriptions = this.store.getState().subscriptions;
+        if (!this.subscriptionsList) return;
         
-        // Clear the list
         this.subscriptionsList.innerHTML = '';
         
+        const subscriptions = this.store.getState().subscriptions;
+        
         if (subscriptions.length === 0) {
-            this.subscriptionsList.innerHTML = '<div class="no-data">No subscriptions found</div>';
+            this.subscriptionsList.innerHTML = '<div class="empty-state">No subscriptions found</div>';
             return;
         }
         
-        // Sort subscriptions by next billing date
-        const sortedSubscriptions = [...subscriptions].sort((a, b) => 
-            new Date(a.nextBillingDate) - new Date(b.nextBillingDate)
-        );
+        const currencySymbol = this.store.getState().currency;
+        const pockets = this.store.getState().pockets;
         
-        // Add each subscription
-        sortedSubscriptions.forEach(subscription => {
-            const item = document.createElement('div');
-            item.className = 'subscription-item';
+        subscriptions.forEach(subscription => {
+            const subscriptionElement = document.createElement('div');
+            subscriptionElement.className = 'subscription-item';
             
-            const monthlyCost = this.calculateMonthlyCost(subscription);
-            const currency = this.store.getState().currency;
+            const pocket = pockets.find(p => p.id === subscription.pocketId) || { name: 'Unknown' };
             
-            item.innerHTML = `
-                <div class="subscription-info">
-                    <div class="category-icon">${getCategoryInitial(subscription.category)}</div>
-                    <div class="subscription-details">
-                        <div class="subscription-title">${subscription.name}</div>
-                        <div class="subscription-date">Next billing: ${formatDate(subscription.nextBillingDate)} (${formatBillingCycle(subscription.billingCycle)})</div>
-                        ${subscription.description ? `<div class="subscription-description">${subscription.description}</div>` : ''}
-                        <div class="monthly-cost">Monthly equivalent: ${currency} ${formatNumber(monthlyCost)}</div>
+            const subscriptionContent = `
+                <div class="subscription-category">
+                    <span class="category-icon">${getCategoryInitial(subscription.category)}</span>
+                </div>
+                <div class="subscription-details">
+                    <div class="subscription-name">
+                        <span>${subscription.name}</span>
+                        <span class="subscription-amount">${currencySymbol} ${formatNumber(subscription.amount)}</span>
+                    </div>
+                    <div class="subscription-meta">
+                        <span class="subscription-cycle">${this.formatBillingCycle(subscription.billingCycle)}</span>
+                        <span class="subscription-date">Next: ${formatDate(subscription.nextBillingDate)}</span>
+                        <span class="subscription-pocket">${pocket.name}</span>
                     </div>
                 </div>
-                <div class="subscription-amount">${currency} ${formatNumber(subscription.amount)}</div>
-                <div class="subscription-actions">
-                    <div class="delete-subscription" data-id="${subscription.id}">×</div>
-                </div>
+                <button class="delete-subscription">&times;</button>
             `;
             
-            this.subscriptionsList.appendChild(item);
-        });
-        
-        // Add event listeners to delete buttons
-        document.querySelectorAll('.delete-subscription').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const subscriptionId = e.target.getAttribute('data-id');
-                this.deleteSubscription(subscriptionId);
+            subscriptionElement.innerHTML = subscriptionContent;
+            
+            // Add delete event listener
+            const deleteButton = subscriptionElement.querySelector('.delete-subscription');
+            deleteButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.deleteSubscription(subscription.id);
             });
+            
+            this.subscriptionsList.appendChild(subscriptionElement);
         });
     }
     
     /**
-     * Render the subscriptions page
+     * Render the subscriptions component
      */
     render() {
+        this.updateCategoryDropdown();
+        this.updatePocketDropdown();
         this.renderSubscriptionsList();
     }
 } 
