@@ -1,4 +1,5 @@
 import Store from '../models/Store.js';
+import { formatNumber } from '../utils/helpers.js';
 
 /**
  * Settings component for handling application settings
@@ -502,14 +503,11 @@ export default class Settings {
                 categoryName.textContent = category;
                 categoryItem.appendChild(categoryName);
                 
-                // Don't allow deletion of default categories
-                if (!this.isDefaultCategory(type, category)) {
-                    const deleteButton = document.createElement('button');
-                    deleteButton.classList.add('delete-btn');
-                    deleteButton.innerHTML = '&times;';
-                    deleteButton.addEventListener('click', () => this.deleteCategory(type, category));
-                    categoryItem.appendChild(deleteButton);
-                }
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('delete-btn');
+                deleteButton.innerHTML = '&times;';
+                deleteButton.addEventListener('click', () => this.deleteCategory(type, category));
+                categoryItem.appendChild(deleteButton);
                 
                 categoryItems.appendChild(categoryItem);
             });
@@ -551,10 +549,9 @@ export default class Settings {
             
             const pocketBalance = document.createElement('div');
             pocketBalance.classList.add('pocket-balance');
-            const balance = typeof pocket.balance === 'number' ? pocket.balance.toFixed(2) : '0.00';
+            const balance = typeof pocket.balance === 'number' ? formatNumber(pocket.balance) : '0.00';
             pocketBalance.textContent = `${currency} ${balance}`;
             pocketInfo.appendChild(pocketBalance);
-            
             pocketItem.appendChild(pocketInfo);
             
             const actionsDiv = document.createElement('div');

@@ -177,6 +177,7 @@
     display: flex;
     gap: 1rem;
     margin-top: 1rem;
+    flex-wrap: wrap;
 }
 
 /* Charts Container */
@@ -489,6 +490,18 @@
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
     }
+    
+    .pockets-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .pockets-actions button {
+        width: 100%;
+        margin-bottom: 0.25rem;
+        white-space: normal;
+    }
 }
 
 @media (max-width: 480px) {
@@ -514,6 +527,11 @@
     
     .chart-wrapper {
         height: 180px;
+    }
+    
+    .pockets-actions button {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
     }
 }
 

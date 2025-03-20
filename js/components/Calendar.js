@@ -18,6 +18,7 @@ export default class Calendar {
         this.calendarMonthYear = null;
         this.calendarGrid = null;
         this.dailyTransactionsList = null;
+        this.transactionModal = null;
         
         // Month names for header
         this.months = [
@@ -27,6 +28,12 @@ export default class Calendar {
         
         // Day names for header
         this.days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        
+        // Intensity levels for the heatmap
+        this.intensityLevels = {
+            income: ['income-level-0', 'income-level-1', 'income-level-2', 'income-level-3', 'income-level-4'],
+            expense: ['expense-level-0', 'expense-level-1', 'expense-level-2', 'expense-level-3', 'expense-level-4']
+        };
     }
     
     /**
@@ -47,6 +54,18 @@ export default class Calendar {
         document.getElementById('today-button').addEventListener('click', () => {
             this.currentDate = new Date();
             this.renderCalendar();
+        });
+
+        // Modal close button
+        document.querySelector('#calendar-transactions-modal .close').addEventListener('click', () => {
+            this.hideModal();
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target.id === 'calendar-transactions-modal') {
+                this.hideModal();
+            }
         });
     }
     
@@ -75,14 +94,6 @@ export default class Calendar {
         
         // Generate the calendar grid
         this.generateCalendarGrid();
-        
-        // If there's a selected date, show its transactions
-        if (this.selectedDate) {
-            this.showDailyTransactions(this.selectedDate);
-        } else {
-            // Hide the daily transactions section if no date is selected
-            document.getElementById('daily-transactions-section').style.display = 'none';
-        }
     }
     
     /**
@@ -132,6 +143,51 @@ export default class Calendar {
     }
     
     /**
+     * Calculate the intensity level for heatmap
+     * @param {number} amount - The transaction amount
+     * @param {string} type - The transaction type ('income' or 'expense')
+     * @param {number} maxAmount - The maximum amount for the month (used for scaling)
+     * @returns {number} - Intensity level (0-4)
+     */
+    calculateIntensityLevel(amount, type, maxAmount) {
+        if (amount === 0) return 0;
+        
+        // Calculate percentage of max value (capped at 100%)
+        const percentage = Math.min((amount / maxAmount) * 100, 100);
+        
+        // Map to intensity levels (0-4)
+        if (percentage < 25) return 1;
+        if (percentage < 50) return 2;
+        if (percentage < 75) return 3;
+        return 4;
+    }
+    
+    /**
+     * Calculate maximum daily transaction amounts for the month
+     * @returns {Object} Max income and expense amounts
+     */
+    getMonthlyMaxAmounts() {
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        
+        let maxIncome = 0;
+        let maxExpense = 0;
+        
+        // Loop through each day of the month
+        for (let day = 1; day <= lastDay.getDate(); day++) {
+            const currentDate = new Date(year, month, day);
+            const dailyData = this.getDailyTransactions(currentDate);
+            
+            maxIncome = Math.max(maxIncome, dailyData.income);
+            maxExpense = Math.max(maxExpense, dailyData.expense);
+        }
+        
+        return { maxIncome, maxExpense };
+    }
+    
+    /**
      * Generate the calendar grid for the current month
      */
     generateCalendarGrid() {
@@ -148,6 +204,9 @@ export default class Calendar {
         
         // Get total days in the month
         const totalDays = lastDay.getDate();
+        
+        // Calculate max amounts for scaling
+        const { maxIncome, maxExpense } = this.getMonthlyMaxAmounts();
         
         // Add day headers
         this.days.forEach(day => {
@@ -188,28 +247,81 @@ export default class Calendar {
             // Get transactions for this day
             const dailyData = this.getDailyTransactions(currentDate);
             
-            // Add transaction indicator if there are transactions
-            const isPositiveBalance = dailyData.balance >= 0;
+            // Determine which type has higher value
+            const dominantType = dailyData.income > dailyData.expense ? 'income' : 'expense';
+            const dominantAmount = Math.max(dailyData.income, dailyData.expense);
             
-            dateCell.innerHTML = `
-                <div class="day-number">${day}</div>
-                ${dailyData.count > 0 ? `
-                    <div class="day-transactions ${isPositiveBalance ? 'positive' : 'negative'}">
-                        <span class="transaction-count">${dailyData.count}</span>
-                        <span class="day-balance">${this.store.getState().currency} ${formatNumber(Math.abs(dailyData.balance))}</span>
-                    </div>
-                ` : ''}
-            `;
+            // Calculate intensity level
+            const maxAmount = dominantType === 'income' ? maxIncome : maxExpense;
+            const intensityLevel = this.calculateIntensityLevel(
+                dominantAmount, 
+                dominantType, 
+                maxAmount
+            );
+            
+            // Add intensity class if there are transactions
+            if (dailyData.count > 0) {
+                dateCell.classList.add(this.intensityLevels[dominantType][intensityLevel]);
+            }
+            
+            // Create day number element
+            const dayNumberElement = document.createElement('div');
+            dayNumberElement.className = 'day-number';
+            dayNumberElement.textContent = day;
+            dateCell.appendChild(dayNumberElement);
+            
+            // Create transaction summary if there are transactions
+            if (dailyData.count > 0) {
+                const transactionSummary = document.createElement('div');
+                transactionSummary.className = `day-transaction-summary ${dominantType}`;
+                
+                // Create compact indicator elements
+                const indicator = document.createElement('div');
+                indicator.className = 'transaction-indicator';
+                
+                // Show number of transactions and dominant amount with an appropriate icon
+                indicator.innerHTML = `<span>${dailyData.count}</span>`;
+                transactionSummary.appendChild(indicator);
+                
+                // Add amount label
+                const amountLabel = document.createElement('div');
+                amountLabel.className = 'transaction-amount-label';
+                amountLabel.innerHTML = `${dominantType === 'income' ? '+' : '-'}${this.store.getState().currency}${formatNumber(dominantAmount)}`;
+                transactionSummary.appendChild(amountLabel);
+                
+                dateCell.appendChild(transactionSummary);
+            }
+            
+            // Explicitly create a separate element for the click handler
+            const clickOverlay = document.createElement('div');
+            clickOverlay.className = 'day-click-overlay';
             
             // Add click event to show daily transactions
-            dateCell.addEventListener('click', () => {
-                this.selectedDate = new Date(currentDate);
-                this.renderCalendar();
-                this.showDailyTransactions(currentDate);
+            clickOverlay.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                this.showModal(new Date(currentDate));
             });
             
+            dateCell.appendChild(clickOverlay);
             this.calendarGrid.appendChild(dateCell);
         }
+    }
+    
+    /**
+     * Show the transactions modal for a specific date
+     * @param {Date} date - The date to show transactions for
+     */
+    showModal(date) {
+        this.selectedDate = date;
+        document.getElementById('calendar-transactions-modal').style.display = 'flex';
+        this.showDailyTransactions(date);
+    }
+
+    /**
+     * Hide the transactions modal
+     */
+    hideModal() {
+        document.getElementById('calendar-transactions-modal').style.display = 'none';
     }
     
     /**
@@ -221,25 +333,15 @@ export default class Calendar {
         const currency = this.store.getState().currency;
         
         // Update the daily transactions header
-        const dailyTransactionsHeader = document.getElementById('daily-transactions-header');
+        const dailyTransactionsHeader = document.getElementById('modal-transactions-header');
         const formattedDate = date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         
         dailyTransactionsHeader.textContent = formattedDate;
         
-        // Display the exact date string being used for debugging
-        const dateDebug = document.getElementById('date-debug');
-        if (dateDebug) {
-            dateDebug.textContent = `Date used for filtering: ${this.formatDateString(date)}`;
-        }
-        
         // Update the summary cards
-        document.getElementById('daily-income').textContent = `${currency} ${formatNumber(dailyData.income)}`;
-        document.getElementById('daily-expenses').textContent = `${currency} ${formatNumber(dailyData.expense)}`;
-        document.getElementById('daily-balance').textContent = `${currency} ${formatNumber(dailyData.balance)}`;
-        
-        // Show or hide the daily transactions section
-        const dailyTransactionsSection = document.getElementById('daily-transactions-section');
-        dailyTransactionsSection.style.display = 'block';
+        document.getElementById('modal-daily-income').textContent = `${currency} ${formatNumber(dailyData.income)}`;
+        document.getElementById('modal-daily-expenses').textContent = `${currency} ${formatNumber(dailyData.expense)}`;
+        document.getElementById('modal-daily-balance').textContent = `${currency} ${formatNumber(dailyData.balance)}`;
         
         // Clear the transactions list
         this.dailyTransactionsList.innerHTML = '';
@@ -292,35 +394,43 @@ export default class Calendar {
                 
                 <div class="calendar-container">
                     <div class="calendar-header">
-                        <button id="prev-month" class="month-nav">&lt;</button>
-                        <h3 id="calendar-month-year"></h3>
-                        <button id="next-month" class="month-nav">&gt;</button>
+                        <div class="calendar-nav-controls">
+                            <button id="prev-month" class="month-nav">&lt;</button>
+                            <h3 id="calendar-month-year"></h3>
+                            <button id="next-month" class="month-nav">&gt;</button>
+                        </div>
                         <button id="today-button" class="today-btn">Today</button>
                     </div>
                     
                     <div class="calendar-grid" id="calendar-grid"></div>
                 </div>
                 
-                <div id="daily-transactions-section" class="daily-transactions-section">
-                    <h3 id="daily-transactions-header">Transactions</h3>
-                    <div id="date-debug" class="date-debug"></div>
-                    
-                    <div class="daily-summary-cards">
-                        <div class="summary-card">
-                            <div class="summary-label">Income</div>
-                            <div class="summary-value income" id="daily-income">$0.00</div>
+                <!-- Modal for displaying daily transactions -->
+                <div id="calendar-transactions-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="modal-transactions-header">Transactions</h3>
+                            <span class="close">&times;</span>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Expenses</div>
-                            <div class="summary-value expense" id="daily-expenses">$0.00</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Balance</div>
-                            <div class="summary-value" id="daily-balance">$0.00</div>
+                        <div class="modal-body">
+                            <div class="daily-summary-cards">
+                                <div class="summary-card">
+                                    <div class="summary-label">Income</div>
+                                    <div class="summary-value income" id="modal-daily-income">$0.00</div>
+                                </div>
+                                <div class="summary-card">
+                                    <div class="summary-label">Expenses</div>
+                                    <div class="summary-value expense" id="modal-daily-expenses">$0.00</div>
+                                </div>
+                                <div class="summary-card">
+                                    <div class="summary-label">Balance</div>
+                                    <div class="summary-value" id="modal-daily-balance">$0.00</div>
+                                </div>
+                            </div>
+                            
+                            <div class="transactions-list" id="daily-transactions-list"></div>
                         </div>
                     </div>
-                    
-                    <div class="transactions-list" id="daily-transactions-list"></div>
                 </div>
                 
                 <style>
@@ -337,14 +447,29 @@ export default class Calendar {
                         align-items: center;
                         padding: 1rem;
                         border-bottom: 2px solid var(--border-color);
+                        flex-wrap: wrap;
+                        row-gap: 10px;
+                    }
+                    
+                    .calendar-nav-controls {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    }
+                    
+                    #calendar-month-year {
+                        margin: 0;
+                        min-width: 140px;
+                        text-align: center;
                     }
                     
                     .month-nav {
                         background-color: white;
                         color: var(--dark-color);
                         font-weight: bold;
-                        width: 40px;
-                        height: 40px;
+                        width: 36px;
+                        height: 36px;
+                        min-width: 36px;
                         padding: 0;
                         display: flex;
                         align-items: center;
@@ -355,6 +480,7 @@ export default class Calendar {
                         background-color: var(--secondary-color);
                         font-size: 0.875rem;
                         padding: 0.5rem 1rem;
+                        white-space: nowrap;
                     }
                     
                     .calendar-grid {
@@ -384,7 +510,7 @@ export default class Calendar {
                     }
                     
                     .calendar-day:hover {
-                        background-color: #f5f5f5;
+                        filter: brightness(0.95);
                     }
                     
                     .calendar-day.empty {
@@ -393,13 +519,45 @@ export default class Calendar {
                     }
                     
                     .calendar-day.today {
-                        background-color: #f0f8ff;
                         border: 2px solid var(--info-color);
                     }
                     
                     .calendar-day.selected {
-                        background-color: #f7f0ff;
                         border: 2px solid var(--primary-color);
+                    }
+                    
+                    /* GitHub-like heatmap styles for income */
+                    .calendar-day.income-level-1 {
+                        background-color: rgba(73, 197, 182, 0.1);
+                    }
+                    
+                    .calendar-day.income-level-2 {
+                        background-color: rgba(73, 197, 182, 0.3);
+                    }
+                    
+                    .calendar-day.income-level-3 {
+                        background-color: rgba(73, 197, 182, 0.5);
+                    }
+                    
+                    .calendar-day.income-level-4 {
+                        background-color: rgba(73, 197, 182, 0.8);
+                    }
+                    
+                    /* GitHub-like heatmap styles for expense */
+                    .calendar-day.expense-level-1 {
+                        background-color: rgba(255, 84, 112, 0.1);
+                    }
+                    
+                    .calendar-day.expense-level-2 {
+                        background-color: rgba(255, 84, 112, 0.3);
+                    }
+                    
+                    .calendar-day.expense-level-3 {
+                        background-color: rgba(255, 84, 112, 0.5);
+                    }
+                    
+                    .calendar-day.expense-level-4 {
+                        background-color: rgba(255, 84, 112, 0.8);
                     }
                     
                     .day-number {
@@ -407,59 +565,72 @@ export default class Calendar {
                         margin-bottom: 0.5rem;
                     }
                     
-                    .day-transactions {
-                        font-size: 0.75rem;
-                        padding: 0.25rem 0.5rem;
-                        border-radius: 0;
-                        border: 1px solid var(--border-color);
-                        margin-top: 0.5rem;
-                        display: flex;
-                        justify-content: space-between;
+                    .day-click-overlay {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        z-index: 10;
                     }
                     
-                    .day-transactions.positive {
-                        background-color: rgba(73, 197, 182, 0.1);
+                    .day-transaction-summary {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        font-size: 0.75rem;
+                        width: 100%;
+                        padding: 2px 3px;
+                        height: auto;
+                        overflow: hidden;
+                        position: relative;
+                        z-index: 5;
+                    }
+                    
+                    .day-transaction-summary.income {
                         color: var(--secondary-color);
                     }
                     
-                    .day-transactions.negative {
-                        background-color: rgba(255, 84, 112, 0.1);
+                    .day-transaction-summary.expense {
                         color: var(--primary-color);
                     }
                     
-                    .transaction-count {
+                    .transaction-indicator {
+                        display: flex;
+                        align-items: center;
                         font-weight: bold;
+                        font-size: 0.7rem;
+                        white-space: nowrap;
                     }
                     
-                    .date-debug {
-                        font-size: 0.75rem;
-                        color: #777;
-                        margin-bottom: 0.5rem;
+                    .transaction-amount-label {
+                        font-size: 0.7rem;
+                        color: white;
+                        text-align: right;
+                        white-space: nowrap;
                     }
                     
-                    .daily-transactions-section {
-                        background-color: white;
-                        border: 2px solid var(--border-color);
-                        padding: 1.5rem;
-                        margin-bottom: 2rem;
-                        box-shadow: var(--shadow);
-                        display: none;
+                    /* Modal Styles */
+                    #calendar-transactions-modal .modal-content {
+                        max-width: 600px;
+                        max-height: 80vh;
+                        overflow-y: auto;
                     }
                     
-                    .daily-summary-cards {
+                    #calendar-transactions-modal .daily-summary-cards {
                         display: grid;
                         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
                         gap: 1rem;
                         margin: 1rem 0 2rem;
                     }
                     
-                    .summary-card {
+                    #calendar-transactions-modal .summary-card {
                         border: 1px solid var(--border-color);
                         padding: 1rem;
                         text-align: center;
                     }
                     
-                    .summary-label {
+                    #calendar-transactions-modal .summary-label {
                         font-size: 0.875rem;
                         text-transform: uppercase;
                         letter-spacing: 1px;
@@ -467,17 +638,75 @@ export default class Calendar {
                         margin-bottom: 0.5rem;
                     }
                     
-                    .summary-value {
+                    #calendar-transactions-modal .summary-value {
                         font-size: 1.25rem;
                         font-weight: bold;
                     }
                     
-                    .summary-value.income {
+                    #calendar-transactions-modal .summary-value.income {
                         color: var(--secondary-color);
                     }
                     
-                    .summary-value.expense {
+                    #calendar-transactions-modal .summary-value.expense {
                         color: var(--primary-color);
+                    }
+                    
+                    .transaction-item {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 0.75rem;
+                        border-bottom: 1px solid var(--border-color);
+                    }
+                    
+                    .transaction-info {
+                        display: flex;
+                        align-items: center;
+                    }
+                    
+                    .category-icon {
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 50%;
+                        background-color: var(--light-color);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 1rem;
+                    }
+                    
+                    .transaction-details {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    
+                    .transaction-title {
+                        font-weight: bold;
+                    }
+                    
+                    .transaction-description {
+                        font-size: 0.875rem;
+                        color: #666;
+                        margin-top: 0.25rem;
+                    }
+                    
+                    .transaction-amount {
+                        font-weight: bold;
+                    }
+                    
+                    .income-amount {
+                        color: var(--secondary-color);
+                    }
+                    
+                    .expense-amount {
+                        color: var(--primary-color);
+                    }
+                    
+                    .no-data {
+                        padding: 2rem;
+                        text-align: center;
+                        color: #666;
+                        font-style: italic;
                     }
                     
                     @media (max-width: 768px) {
@@ -490,10 +719,71 @@ export default class Calendar {
                             padding: 0.25rem;
                         }
                         
-                        .day-transactions {
+                        .day-transaction-summary {
+                            font-size: 0.65rem;
                             flex-direction: column;
-                            font-size: 0.7rem;
+                            padding: 1px;
+                        }
+                        
+                        .transaction-indicator,
+                        .transaction-amount-label {
+                            font-size: 0.6rem;
+                        }
+                        
+                        .calendar-header {
+                            justify-content: center;
+                        }
+                        
+                        #calendar-month-year {
+                            min-width: 120px;
+                            font-size: 1rem;
+                        }
+                        
+                        .month-nav {
+                            width: 30px;
+                            height: 30px;
+                            min-width: 30px;
+                        }
+                        
+                        #calendar-transactions-modal .modal-content {
+                            width: 95%;
+                            max-height: 80vh;
+                        }
+                        
+                        .transaction-item {
+                            padding: 0.5rem;
+                        }
+                        
+                        .category-icon {
+                            width: 30px;
+                            height: 30px;
+                            margin-right: 0.5rem;
+                        }
+                    }
+                    
+                    @media (max-width: 480px) {
+                        .calendar-day {
+                            min-height: 45px;
                             padding: 0.15rem;
+                        }
+                        
+                        .day-number {
+                            margin-bottom: 0.2rem;
+                            font-size: 0.8rem;
+                        }
+                        
+                        .day-transaction-summary {
+                            font-size: 0.55rem;
+                        }
+                        
+                        .transaction-indicator,
+                        .transaction-amount-label {
+                            font-size: 0.55rem;
+                        }
+                        
+                        .calendar-day-header {
+                            padding: 0.25rem;
+                            font-size: 0.65rem;
                         }
                     }
                 </style>
@@ -504,6 +794,7 @@ export default class Calendar {
             this.calendarMonthYear = document.getElementById('calendar-month-year');
             this.calendarGrid = document.getElementById('calendar-grid');
             this.dailyTransactionsList = document.getElementById('daily-transactions-list');
+            this.transactionModal = document.getElementById('calendar-transactions-modal');
             
             // Initialize event listeners
             this.initEventListeners();
